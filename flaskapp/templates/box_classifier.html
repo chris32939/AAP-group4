@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bounding Box Prediction</title>
+    <script>
+        async function predictPosition() {
+            let width = document.getElementById("width").value;
+            let height = document.getElementById("height").value;
+            let xmin = document.getElementById("xmin").value;
+            let ymin = document.getElementById("ymin").value;
+            let xmax = document.getElementById("xmax").value;
+            let ymax = document.getElementById("ymax").value;
+
+            let response = await fetch('/predictBox', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ width, height, xmin, ymin, xmax, ymax })
+            });
+
+            let result = await response.json();
+            document.getElementById("prediction").innerText = result.prediction || "Error: " + result.error;
+        }
+
+        async function drawBox() {
+            let width = document.getElementById("width").value;
+            let height = document.getElementById("height").value;
+            let xmin = document.getElementById("xmin").value;
+            let ymin = document.getElementById("ymin").value;
+            let xmax = document.getElementById("xmax").value;
+            let ymax = document.getElementById("ymax").value;
+
+            let response = await fetch('/draw-box', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ width, height, xmin, ymin, xmax, ymax })
+            });
+
+            let result = await response.json();
+            if (result.image_url) {
+                document.getElementById("bounding-box-img").src = result.image_url;
+            } else {
+                alert("Error: " + result.error);
+            }
+        }
+    </script>
+</head>
+<body>
+    <h2>Bounding Box Prediction</h2>
+    
+    <label>Image Width: <input type="number" id="width" value="500"></label><br>
+    <label>Image Height: <input type="number" id="height" value="500"></label><br>
+    <label>xmin: <input type="number" id="xmin" value="100"></label><br>
+    <label>ymin: <input type="number" id="ymin" value="100"></label><br>
+    <label>xmax: <input type="number" id="xmax" value="300"></label><br>
+    <label>ymax: <input type="number" id="ymax" value="300"></label><br>
+
+    <button onclick="predictPosition()">Predict Position</button>
+    <button onclick="drawBox()">Draw Bounding Box</button>
+
+    <h3>Prediction Result:</h3>
+    <p id="prediction">---</p>
+
+    <h3>Bounding Box Preview:</h3>
+    <img id="bounding-box-img" src="/static/bounding_box.png" width="500" height="500">
+</body>
+</html>
