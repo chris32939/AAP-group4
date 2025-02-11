@@ -1,5 +1,5 @@
 import os
-from flask import Flask, jsonify, request, render_template, redirect, url_for, session
+from flask import Flask, jsonify, request, render_template, redirect, url_for, session, send_file
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
@@ -10,6 +10,8 @@ from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer
 from flask_socketio import SocketIO
 from flask_cors import CORS
+import tensorflow as tf
+from PIL import Image, ImageDraw
 # Ensure ffmpeg is installed 'conda install -c conda-forge ffmpeg'. ffmpeg is used in a subprocess.
 
 import cv2
@@ -410,7 +412,7 @@ def runDetection():
         frame_counter = 0
 
         # List to store detection results for each frame
-        video_detections = []
+        video_detections = []   
 
         # Process each frame of the video
         while True:
@@ -544,8 +546,68 @@ def deleteDetectionHistory():
 
     # Return a success response
     return jsonify({"message": "Detection history deleted successfully."}), 200
- 
+
+box_model = tf.keras.models.load_model('box_position_classifier.h5')
+
+# Class labels for predictions
+class_mapping = {
+    0: "Top-left", 1: "Top-middle", 2: "Top-right",
+    3: "Middle-left", 4: "Middle-middle", 5: "Middle-right",
+    6: "Bottom-left", 7: "Bottom-middle", 8: "Bottom-right"
+}
+
+OUTPUT_FOLDER = "static"
+os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+
+@app.route('/predictBox', methods=['POST'])
+def predictBox():
+    try:
+        data = request.json
+        width, height = data["width"], data["height"]
+        xmin, ymin, xmax, ymax = data["xmin"], data["ymin"], data["xmax"], data["ymax"]
+
+        input_data = np.array([[width, height, xmin, ymin, xmax, ymax]], dtype=np.float32)
+        prediction = box_model.predict(input_data)
+        
+        predicted_label = np.argmax(prediction, axis=1)[0]
+        readable_label = class_mapping[predicted_label]
+
+        return jsonify({"prediction": readable_label})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+@app.route('/draw-box', methods=['POST'])
+def draw_bounding_box():
+    try:
+        data = request.json
+        width, height = int(data["width"]), int(data["height"])
+        xmin, ymin, xmax, ymax = int(data["xmin"]), int(data["ymin"]), int(data["xmax"]), int(data["ymax"])
+
+        # Create an image with a bounding box
+        image = Image.new("RGB", (width, height), "white")
+        draw = ImageDraw.Draw(image)
+        
+        ymin_corrected = height - ymax
+        ymax_corrected = height - ymin
+
+        draw.rectangle([xmin, ymin_corrected, xmax, ymax_corrected], outline="red", width=3)
+
+        output_path = os.path.join(OUTPUT_FOLDER, "bounding_box.png")
+        image.save(output_path)
+
+        return jsonify({"image_url": f"/static/bounding_box.png"})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+@app.route("/box_class")
+@login_required
+def box_class():
+    
+    return render_template('box_classifier.html')
+
 
 # Start the web server
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=8000)
+    app.run(debug=True, host="0.0.0.0", port=5000)

@@ -287,7 +287,7 @@ function initializeProgressTracking() {
     const progressTracking = document.getElementById("progressTracking");
     progressTracking.style.display = "inline";
 
-    const socket = io.connect("http://localhost:8000");
+    const socket = io.connect("http://localhost:5000");
 
     socket.on("progress", (data) => {
         const progressBar = document.getElementById("progressBar").children[0];
