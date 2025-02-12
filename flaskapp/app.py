@@ -12,6 +12,7 @@ from flask_socketio import SocketIO
 from flask_cors import CORS
 import tensorflow as tf
 from PIL import Image, ImageDraw
+# Ensure ffmpeg is installed 'conda install -c conda-forge ffmpeg'. ffmpeg is used in a subprocess.
 
 import cv2
 import numpy as np
@@ -65,7 +66,7 @@ login_manager.login_view = "login"
 s = URLSafeTimedSerializer(app.secret_key)
 
 # Initialize the model
-model = torch.hub.load('ultralytics/yolov5', 'custom', path='best_exp42.pt')
+object_detection_model = torch.hub.load('ultralytics/yolov5', 'custom', path='weights/christopher.pt')
 
 # Initialize SocketIO
 socketio = SocketIO(app, cors_allowed_origins="*")
@@ -170,15 +171,20 @@ def logout():
 def signup():
     form = SignupForm()
 
-    if request.method == "POST" and form.validate_on_submit():
+    if request.method == "POST":
         email = form.email.data
         username = form.username.data
         password = form.password.data
+        confirm_password = form.confirm_password.data
         
         # Check if the email already exists in the database
         existing_user = User.query.filter_by(email=email).first()
         if existing_user:
             return render_template("signup.html", form=form, error="Email already exists")
+
+        # Check if passwords match
+        if password != confirm_password:
+            return render_template("signup.html", form=form, error="Passwords do not match.")
 
         # Hash the password before storing it
         hashed_password = generate_password_hash(password)
@@ -203,11 +209,6 @@ def change_user_details():
         new_username = form.new_username.data
         new_password = form.new_password.data
         confirm_password = form.confirm_password.data
-
-        # Debugging step: Print to ensure password and username values are being passed correctly
-        print(f"New Username: {new_username}")
-        print(f"New Password: {new_password}")
-        print(f"Confirm Password: {confirm_password}")
 
         # Check if password fields are empty
         if not new_password or not confirm_password:
@@ -291,7 +292,7 @@ def index():
         'timestamp': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(file.timestamp))
     } for file in user_files]
 
-    return render_template('file.html', files=file_data, username=current_user.username)
+    return render_template('objectDetection.html', files=file_data, username=current_user.username)
 
 @app.route("/runDetection", methods=['POST'])
 @login_required
@@ -320,7 +321,7 @@ def runDetection():
         img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)  # Convert to RGB (YOLOv5 expects RGB images)
         
         # Run detection with YOLOv5 model
-        results = model(img_rgb)  # Detect on the image
+        results = object_detection_model(img_rgb)  # Detect on the image
 
         # Get detections as pandas DataFrame
         predictions = results.pandas().xywh[0].to_dict(orient="records")  # Convert DataFrame to a list of dicts
@@ -431,7 +432,7 @@ def runDetection():
             img_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # Convert to RGB (YOLOv5 expects RGB images)
             
             # Run detection with YOLOv5 model
-            results = model(img_rgb)  # Detect on the frame
+            results = object_detection_model(img_rgb)  # Detect on the frame
 
             # Get detections as pandas DataFrame
             predictions = results.pandas().xywh[0].to_dict(orient="records")  # Convert DataFrame to a list of dicts

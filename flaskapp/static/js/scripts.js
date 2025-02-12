@@ -17,46 +17,6 @@ function confirmLogout() {
     }
 }
 
-// Change user details
-function changeUserDetails() {
-    // Function to handle the change form submission
-    document.getElementById("changeForm").addEventListener("submit", function(event) {
-        event.preventDefault();  // Prevent the form from reloading the page
-
-        // Get the values from the form
-        const newUsername = document.getElementById("newUsername").value;
-        const newPassword = document.getElementById("newPassword").value;
-        const confirmPassword = document.getElementById("confirmPassword").value;
-
-        // Check if the passwords match
-        if (newPassword !== confirmPassword) {
-            alert("Passwords do not match.");
-            return;
-        }
-
-        // Send a POST request to change the username and password
-        fetch("/changeUserDetails", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded"
-            },
-            body: `newUsername=${encodeURIComponent(newUsername)}&newPassword=${encodeURIComponent(newPassword)}&confirmPassword=${encodeURIComponent(confirmPassword)}`
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                alert(data.error);  // Show error message if any
-            } else {
-                alert(data.message);  // Show success message
-            }
-        })
-        .catch(error => {
-            console.error("Error:", error);
-            alert("An error occurred. Please try again.");
-        });
-    });
-}
-
 // Function to handle the form submission
 function submitFile() {
     const fileInput = document.getElementById("formFile");
