@@ -547,7 +547,7 @@ def deleteDetectionHistory():
     # Return a success response
     return jsonify({"message": "Detection history deleted successfully."}), 200
 
-box_model = tf.keras.models.load_model('box_position_classifier.h5')
+box_model = tf.keras.models.load_model('weights/box_position_classifier.h5')
 
 # Class labels for predictions
 class_mapping = {
