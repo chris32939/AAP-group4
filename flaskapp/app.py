@@ -144,6 +144,7 @@ def load_user(user_id):
 
 
 ########## Setup routes ##########
+    ##### Christopher's routes #####
 @app.route("/", methods=["GET", "POST"])
 def login():
     form = LoginForm()
@@ -261,7 +262,7 @@ def reset_password(token):
     form = ResetPasswordForm()
 
     try:
-        email = s.loads(token, salt='password-reset-salt', max_age=60)
+        email = s.loads(token, salt='password-reset-salt', max_age=300)
         print(email)
         user = User.query.filter_by(email=email).first()
         
@@ -283,6 +284,11 @@ def reset_password(token):
 @app.route("/index")
 @login_required
 def index():
+    return render_template('index.html', username=current_user.username)
+
+@app.route("/objectDetection")
+@login_required
+def objectDetection():
     # Retrieve all files for the current user
     user_files = DetectionHistory.query.filter_by(user_id=current_user.id).all()
 
@@ -294,9 +300,9 @@ def index():
 
     return render_template('objectDetection.html', files=file_data, username=current_user.username)
 
-@app.route("/runDetection", methods=['POST'])
+@app.route("/runObjectDetection", methods=['POST'])
 @login_required
-def runDetection():
+def runObjectDetection():
     # Load file from POST request
     uploaded_file = request.files['file']
     if uploaded_file.filename == '':
@@ -510,9 +516,9 @@ def runDetection():
     else:
         return jsonify({"error": "Unsupported file type."})
 
-@app.route("/detectionHistory")
+@app.route("/objectDetectionHistory")
 @login_required
-def detectionHistory():
+def objectDetectionHistory():
     # Retrieve all images for the current user
     user_files = DetectionHistory.query.filter_by(user_id=current_user.id).all()    
 
@@ -525,9 +531,9 @@ def detectionHistory():
     # Return JSON response containing image history
     return jsonify({'files': file_data})   
 
-@app.route("/deleteDetectionHistory", methods=["POST"])
+@app.route("/deleteObjectDetectionHistory", methods=["POST"])
 @login_required
-def deleteDetectionHistory():
+def deleteObjectDetectionHistory():
     # Query the ImageHistory table to find all images of the logged-in user
     files_to_delete = DetectionHistory.query.filter_by(user_id=current_user.id).all()
 
@@ -547,6 +553,9 @@ def deleteDetectionHistory():
     # Return a success response
     return jsonify({"message": "Detection history deleted successfully."}), 200
 
+##### End of Christopher's routes #####
+
+
 box_model = tf.keras.models.load_model('weights/box_position_classifier.h5')
 
 # Class labels for predictions
@@ -560,6 +569,7 @@ OUTPUT_FOLDER = "static"
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
 @app.route('/predictBox', methods=['POST'])
+@login_required
 def predictBox():
     try:
         data = request.json
@@ -578,6 +588,7 @@ def predictBox():
         return jsonify({"error": str(e)}), 400
 
 @app.route('/draw-box', methods=['POST'])
+@login_required
 def draw_bounding_box():
     try:
         data = request.json

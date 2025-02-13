@@ -19,16 +19,16 @@
         <!-- Navigation-->
         <nav class="navbar navbar-expand-lg navbar-light fixed-top" id="mainNav">
             <div class="container px-4 px-lg-5">
-                <a class="navbar-brand" href="#page-top">Object Detection</a>
+                <a class="navbar-brand" href="{{ url_for('index') }}">AAP - Group 4</a>
                 <button class="navbar-toggler navbar-toggler-right" type="button" data-bs-toggle="collapse" data-bs-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
                     Menu
                     <i class="fas fa-bars"></i>
                 </button>
                 <div class="collapse navbar-collapse" id="navbarResponsive">
                     <ul class="navbar-nav ms-auto">
-                        <li class="nav-item"><a class="nav-link" href="#upload">Upload</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#result">Result</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#history">History</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('objectDetection') }}">Object Detection</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('box_class') }}">Box Classifier</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#">Link</a></li>
                         <li class="nav-item d-flex align-items-center">
                             <span class="nav-link nav-username">Hello, {{ username }}</span>
                         </li>
@@ -55,7 +55,7 @@
         <!-- Upload-->
         <section class="upload-section text-center" id="upload">
             <div class="container px-4 px-lg-5 d-flex h-100 align-items-center  justify-content-center">
-                <div class="col-lg-8">
+                <div class="col-lg-12">
                     <h2 class="text-white mb-4">Upload an Image or Video to Begin</h2>
                     <p class="text-white-50">
                         A YOLOv5-based object detection model, fine-tuned to detect chairs, potted plants, sofas, and tables, will run inference on the uploaded image or video. 
@@ -114,7 +114,7 @@
                 <div class="row gx-0 mb-5 mb-lg-0 justify-content-center" id="imageHistory"></div>
                 <!-- Delete History -->
                 <div class="row gx-0 my-5 justify-content-center">
-                    <a class="btn btn-primary" onclick="deleteDetectionHistory()" id="deleteHistBtn">Delete Image History</a>
+                    <a class="btn btn-primary" onclick="deleteObjectDetectionHistory()" id="deleteHistBtn">Delete Image History</a>
                 </div>
             </div>
         </section>

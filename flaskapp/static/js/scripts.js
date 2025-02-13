@@ -72,7 +72,7 @@ function submitFile() {
     }
 
     // Send the image to the server for inference
-    fetch("/runDetection", {
+    fetch("/runObjectDetection", {
         method: "POST",
         body: formData
     })
@@ -101,7 +101,7 @@ function submitFile() {
         }
 
         // Fetch image history again after submitting a new image
-        fetchDetectionHistory();
+        fetchObjectDetectionHistory();
 
         // Re enable submit and clear buttons
         submitBtn.classList.remove("disabled");
@@ -164,8 +164,8 @@ function checkFileInput() {
 }
 
 // Fetch image/video history from the server
-function fetchDetectionHistory() {
-    fetch("/detectionHistory")
+function fetchObjectDetectionHistory() {
+    fetch("/objectDetectionHistory")
         .then(response => response.json())
         .then(data => {
             const deleteBtn = document.getElementById("deleteHistBtn");
@@ -254,13 +254,13 @@ function fetchDetectionHistory() {
 }
 
 // Delete detection history from the server
-function deleteDetectionHistory() {
+function deleteObjectDetectionHistory() {
     // Show a confirmation dialog to the user before deleting
     const confirmed = confirm("Are you sure you want to delete all detection history?");
     
     if (confirmed) {
         // Send a POST request to the delete route using the Fetch API
-        fetch("/deleteDetectionHistory", {
+        fetch("/deleteObjectDetectionHistory", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",  // Specify the content type
@@ -312,7 +312,7 @@ function initializeProgressTracking() {
 // Fetch detection history when the page loads
 window.onload = function() {
     // Check if the current page is index.html (or the home page)
-    if (window.location.pathname === "/index") {
-        fetchDetectionHistory();
+    if (window.location.pathname === "/objectDetection") {
+        fetchObjectDetectionHistory();
     }
 };
