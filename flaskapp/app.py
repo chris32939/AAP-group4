@@ -166,6 +166,9 @@ def login():
 @login_required
 def logout():
     logout_user()
+
+    session.clear()
+
     return redirect(url_for("login"))
 
 @app.route("/signup", methods=["GET", "POST"])
@@ -553,6 +556,27 @@ def deleteObjectDetectionHistory():
     # Return a success response
     return jsonify({"message": "Detection history deleted successfully."}), 200
 
+@app.route('/saveBoxCoordinates', methods=['POST'])
+@login_required
+def save_coordinates():
+    bounding_box_coordinates = request.json.get('boundingBoxCoordinates')
+
+    # Store the coordinates in the session
+    session['boundingBoxCoordinates'] = bounding_box_coordinates
+
+    return jsonify({"message": "Coordinates saved to session"}), 200
+
+@app.route('/getBoxCoordinates', methods=['GET'])
+@login_required
+def get_coordinates():
+    # Get the bounding box coordinates from the session
+    bounding_box_coordinates = session.get('boundingBoxCoordinates', None)
+
+    if bounding_box_coordinates:
+        return jsonify({"boundingBoxCoordinates": bounding_box_coordinates}), 200
+    else:
+        return jsonify({"message": "No coordinates found in session"}), 404
+
 ##### End of Christopher's routes #####
 
 
@@ -616,7 +640,7 @@ def draw_bounding_box():
 @login_required
 def box_class():
     
-    return render_template('box_classifier.html')
+    return render_template('box_classifier.html', username=current_user.username)
 
 
 # Start the web server

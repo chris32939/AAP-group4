@@ -78,12 +78,20 @@ function submitFile() {
     })
     .then(response => response.json())
     .then(data => {
+        // Store the bounding box coordinates in sessionStorage before redirecting
+        const boundingBoxCoordinates = data.detections[0]['bounding_box'];
+        sessionStorage.setItem("boundingBoxCoordinates", JSON.stringify(boundingBoxCoordinates));
+
         if (data.file_type==="image") {
             // Show the image
             const imageUrl = data.output_url;
             imageResult.src = imageUrl;
             imageResult.style.display = 'inline';
             imageResult.style.border = '0.25rem solid #64a19d';
+
+            // Show the 'send to box classifier' button
+            const sendToBCBtn = document.getElementById('sendToBCBtn');
+            sendToBCBtn.style.display = 'inline-block';
 
             videoResult.src = "";
             videoResult.style.display = 'none';
@@ -94,6 +102,10 @@ function submitFile() {
             videoResult.src = videoUrl;
             videoResult.style.display = 'inline';
             videoResult.style.border = '0.25rem solid #64a19d';
+
+            // Show the 'send to box classifier' button
+            const sendToBCBtn = document.getElementById('sendToBCBtn');
+            sendToBCBtn.style.display = 'inline-block';
 
             imageResult.src = "";
             imageResult.style.display = 'none';
@@ -106,6 +118,25 @@ function submitFile() {
         // Re enable submit and clear buttons
         submitBtn.classList.remove("disabled");
         clearBtn.classList.remove("disabled");
+
+
+        // Send the coordinates to the Flask server to store them in the session
+        fetch('/saveBoxCoordinates', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                boundingBoxCoordinates: boundingBoxCoordinates,
+            }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log("Coordinates saved:", data);
+        })
+        .catch(error => {
+            console.error('Error saving coordinates:', error);
+        });
     })
     .catch(error => {
         alert("Error: " + error);
@@ -119,6 +150,7 @@ function clearFile() {
     const videoResult = document.getElementById("videoResult")
     const buttonGroup = document.getElementById('buttonGroup');
     const noSrc = document.getElementById("noSrc");
+    const sendToBCBtn = document.getElementById('sendToBCBtn');
 
     // Clear the file input
     fileInput.value = "";
@@ -133,6 +165,9 @@ function clearFile() {
 
     // Show 'no file' text
     noSrc.style.display = 'inline';
+
+    // Hide the 'send to box classifier' button
+    sendToBCBtn.style.display = 'none';
 
     // Check if a file is selected
     if (fileInput.files.length > 0) {
@@ -309,10 +344,93 @@ function initializeProgressTracking() {
     });
 }
 
+// Send detection to box classifier
+function sendToBoxClassifier() {
+    // Redirect to 'box_classifier.html'
+    window.location.href = "/box_class";
+}
+
+// Function to get coordinates from the server
+function getBoxCoordinatesFromServer() {
+    fetch('/getBoxCoordinates', {
+        method: 'GET',
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.boundingBoxCoordinates) {
+            const boundingBoxCoordinates = data.boundingBoxCoordinates;
+            console.log("Coordinates retrieved:", boundingBoxCoordinates);
+
+            // Once the coordinates are retrieved, populate the form
+            document.getElementById("width").value = 640;
+            document.getElementById("height").value = 640;
+            document.getElementById("xmin").value = boundingBoxCoordinates[0];
+            document.getElementById("ymin").value = boundingBoxCoordinates[1];
+            document.getElementById("xmax").value = boundingBoxCoordinates[2];
+            document.getElementById("ymax").value = boundingBoxCoordinates[3];
+
+            // Call 'box_class' functions after the coordinates are set
+            predictPosition();
+            drawBox();
+        } else {
+            console.log("No coordinates found in session");
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching coordinates:', error);
+    });
+}
+
+// 'box_class' functions
+async function predictPosition() {
+    let width = document.getElementById("width").value;
+    let height = document.getElementById("height").value;
+    let xmin = document.getElementById("xmin").value;
+    let ymin = document.getElementById("ymin").value;
+    let xmax = document.getElementById("xmax").value;
+    let ymax = document.getElementById("ymax").value;
+
+    let response = await fetch('/predictBox', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ width, height, xmin, ymin, xmax, ymax })
+    });
+
+    let result = await response.json();
+    document.getElementById("prediction").innerText = result.prediction || "Error: " + result.error;
+}
+async function drawBox() {
+    let width = document.getElementById("width").value;
+    let height = document.getElementById("height").value;
+    let xmin = document.getElementById("xmin").value;
+    let ymin = document.getElementById("ymin").value;
+    let xmax = document.getElementById("xmax").value;
+    let ymax = document.getElementById("ymax").value;
+
+    let response = await fetch('/draw-box', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ width, height, xmin, ymin, xmax, ymax })
+    });
+
+    let result = await response.json();
+    if (result.image_url) {
+        document.getElementById("bounding-box-img").src = result.image_url;
+    } else {
+        alert("Error: " + result.error);
+    }
+}
+
+
 // Fetch detection history when the page loads
 window.onload = function() {
     // Check if the current page is index.html (or the home page)
     if (window.location.pathname === "/objectDetection") {
         fetchObjectDetectionHistory();
+    }
+
+    // Check if box coordinates are saved to user session
+    if (window.location.pathname === "/box_class") {
+        getBoxCoordinatesFromServer();
     }
 };

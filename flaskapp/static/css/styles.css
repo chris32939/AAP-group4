@@ -11377,6 +11377,9 @@ body {
   max-width: 80%;
   display: none;
 }
+.result-section .btn {
+  display: none;
+}
 .result-section .result-text {
   padding: 3rem;
   font-size: 90%;
