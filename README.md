@@ -12,6 +12,16 @@ Main Directories & Files
 
 --------------------
 
+Member Contributions
+
+Christopher
+- sqlite database
+- login/sign up/reset password/change user details features
+- session management
+- object detection model (supports both image and video uploads)
+
+--------------------
+
 Installing Dependencies
 
 conda install -c conda-forge ffmpeg
