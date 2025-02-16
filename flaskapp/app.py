@@ -53,7 +53,7 @@ app.config['MAIL_PORT'] = 587  # Gmail SMTP port
 app.config['MAIL_USE_TLS'] = True  # Enable TLS encryption
 app.config['MAIL_USE_SSL'] = False  # No SSL needed, since we are using TLS
 app.config['MAIL_USERNAME'] = 'c2729751@gmail.com'  # Your Gmail address
-app.config['MAIL_PASSWORD'] = 'tgmm zttp dggf iepo'  # Your Gmail app-specific password
+app.config['MAIL_PASSWORD'] = 'pmju onwh fyxc gpbq'  # Your Gmail app-specific password
 app.config['MAIL_DEFAULT_SENDER'] = 'c2729751@gmail.com'  # Default sender
 mail = Mail(app)
 
