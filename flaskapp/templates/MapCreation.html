@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>Map Creation</title>
+    <!-- Font Awesome icons (free version)-->
+    <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
+    <!-- Google fonts-->
+    <link href="https://fonts.googleapis.com/css?family=Varela+Round" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet" />
+    <!-- My CSS -->
+    <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet" />
+    
+    <style>
+        body{
+            background: #99d8ff;
+        }
+        #mainNav{
+            background: linear-gradient(#0083d5, #99d8ff00);
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(var(--grid-cols, 1), 25px);
+            gap: 2px;
+        }
+        .cell {
+            width: 25px;
+            height: 25px;
+            border: 1px solid black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        .empty { background-color: lightgray; }
+        .attic { background-color: lightblue; color: blue; }
+        .bedroom { background-color: lightgreen; color: green; }
+        .kitchen { background-color: lightcoral; color: red; }
+        .balcony { background-color: purple; color: white; }
+        .bathroom { background-color: lightblue; color: navy; }
+        .conference_room { background-color: brown; color: white; }
+        .dining_room { background-color: orange; color: darkred; }
+        .garage { background-color: gray; color: white; }
+        .living_room { background-color: yellow; color: black; }
+        .office { background-color: darkblue; color: white; }
+        .storeroom { background-color: darkgray; color: white; }
+        .utility_room { background-color: teal; color: white; }
+        .pathway { background-color: white; color: black; border: 0.5px dashed black; }
+
+    </style>
+</head>
+<body>
+    
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top" id="mainNav">
+        <div class="container px-4 px-lg-5">
+            <a class="navbar-brand">AAP - Group 4</a>
+            <button class="navbar-toggler navbar-toggler-right" type="button" data-bs-toggle="collapse" data-bs-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                Menu
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}">Return</a></li>
+                    <li class="nav-item"><a class="nav-link" href="mapcreation">MapManager</a></li>
+                    <li class="nav-item"><a class="nav-link" href="inquire">Inquires</a></li>
+                    <li class="nav-item d-flex align-items-center">
+                        <span class="nav-link nav-username">Hello, {{ username }}</span>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link">Change User Details</a>
+                    </li>
+                    <li class="nav-item"><a class="nav-link">Log Out</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div style="margin-top:  130px;">
+
+    </div>
+    <div style="margin:50px">
+        <h1><b>House Layout - Map Creation</b><h6>(dex)</h6></h1>
+            <br><hr><br>
+        
+        <h2>Generate Grid</h2><br>
+        <label for="x">Width (X):</label>
+        <input type="number" id="x" required>
+        <label for="y">Height (Y):</label>
+        <input type="number" id="y" required>
+        <button onclick="generateGrid()">Generate Grid</button>
+        <br><hr><br>
+
+        <h2>Select Room Type</h2>
+        <select id="roomSelector">
+            <option value="empty" style="color: black;">Empty</option>
+            <option value="attic" style="color: blue;">Attic</option>
+            <option value="balcony" style="color: purple;">Balcony</option>
+            <option value="bathroom" style="color: lightblue;">Bathroom</option>
+            <option value="bedroom" style="color: green;">Bedroom</option>
+            <option value="conference_room" style="color: brown;">Conference Room</option>
+            <option value="dining_room" style="color: orange;">Dining Room</option>
+            <option value="garage" style="color: gray;">Garage</option>
+            <option value="kitchen" style="color: red;">Kitchen</option>
+            <option value="living_room" style="color: yellow;">Living Room</option>
+            <option value="office" style="color: darkblue;">Office</option>
+            <option value="storeroom" style="color: darkgray;">Storeroom</option>
+            <option value="utility_room" style="color: teal;">Utility Room</option>
+            <option value="pathway" style="color: black;">Pathway</option>
+        </select>
+        <br><hr><br>
+        <h2>Grid</h2>
+        <div class="grid" id="grid"></div><br>
+
+        <button onclick="saveGrid()">Save Grid</button>
+        <br><br>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", loadGrid);
+        let gridData = {};
+
+        function loadGrid() {
+            fetch("/load_grid")
+                .then(response => response.json())
+                .then(data => {
+                    if (data.grid) renderGrid(data.grid);
+                })
+                .catch(error => console.error("Error loading grid:", error));
+        }
+
+        function renderGrid(savedGrid) {
+            const grid = document.getElementById("grid");
+            grid.innerHTML = "";
+            const rows = savedGrid.length;
+            const cols = savedGrid[0].length;
+            document.getElementById("x").value = cols;
+            document.getElementById("y").value = rows;
+            grid.style.setProperty("--grid-cols", cols);
+            gridData = {};
+
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    const cell = document.createElement("div");
+                    const roomType = savedGrid[row][col] || "empty";
+                    cell.className = `cell ${roomType}`;
+                    cell.id = `cell_${row}_${col}`;
+                    if (row == 0){
+                        cell.textContent = `X${col}`
+                    }
+                    else if(col == 0){
+                        cell.textContent = `Y${row}`
+                    }
+                    cell.onclick = () => updateCell(row, col, cell);
+                    grid.appendChild(cell);
+                    gridData[`${row},${col}`] = roomType;
+                }
+            }
+        }
+
+        function generateGrid() {
+            const x = document.getElementById("x").value;
+            const y = document.getElementById("y").value;
+            const grid = document.getElementById("grid");
+            grid.innerHTML = "";
+            grid.style.setProperty("--grid-cols", x);
+            gridData = {};
+
+            for (let row = 0; row < y; row++) {
+                for (let col = 0; col < x; col++) {
+                    const cell = document.createElement("div");
+                    cell.className = "cell empty";
+                    cell.id = `cell_${row}_${col}`;
+                    if (row == 0){
+                        cell.textContent = `X${col}`
+                    }
+                    else if(col == 0){
+                        cell.textContent = `Y${row}`
+                    }
+                    cell.onclick = () => updateCell(row, col, cell);
+                    grid.appendChild(cell);
+                    gridData[`${row},${col}`] = "empty";
+                }
+            }
+        }
+
+        function updateCell(row, col, cell) {
+            const selectedValue = document.getElementById("roomSelector").value;
+            cell.className = `cell ${selectedValue}`;
+            gridData[`${row},${col}`] = selectedValue;
+        }
+
+        function saveGrid() {
+            fetch("/save_grid", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(gridData)
+            })
+            .then(response => response.json())
+            .then(data => alert(data.message))
+            .catch(error => console.error("Error:", error));
+        }
+    </script>
+</body>
+</html>

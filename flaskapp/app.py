@@ -18,6 +18,11 @@ import base64
 import io
 # Ensure ffmpeg is installed 'conda install -c conda-forge ffmpeg'. ffmpeg is used in a subprocess.
 
+
+from transformers import BertTokenizer, BertForSequenceClassification
+import networkx as nx
+import json
+
 import cv2
 import numpy as np
 import torch
@@ -754,6 +759,174 @@ def predictGroceryItem():
     except Exception as e:
         return jsonify({"error": str(e)}), 400
     
+#/////////////////////////////////////////// my shit (Dex)
+# ======== MODEL SETUP ========
+model = BertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=15)
+model.load_state_dict(torch.load("models/model_weights.pth", map_location=torch.device('cpu')))
+model.eval()
+
+# Move the model to the correct device (GPU/CPU)
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+model.to(device)
+
+tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+
+labels = ['Invalid_instruction', 'attic', 'balcony', 'bathroom', 'bedroom',
+          'conference_room', 'dining_room', 'garage', 'get_location', 'kitchen',
+          'living_room', 'move_instruction', 'office', 'storeroom', 'utility_room']
+
+# ======== GLOBAL VARIABLES ========
+grid = {}
+house_map = nx.Graph()  # Graph for pathfinding
+instruction = None
+tag = None
+
+# ======== ROUTES ========
+
+@app.route("/mapcreation")
+def mapcreation():
+    return render_template("mapcreation.html")
+
+@app.route("/inquire")
+def inquire():
+    return render_template("inquire.html")
+
+
+@app.route("/predict", methods=["POST"])
+def predict():
+    global instruction, tag, house_map
+    data = request.get_json()
+    text = data.get("text", "").strip()
+
+    if not text:
+        return jsonify({"error": "No text provided"})
+
+    # Tokenize input text
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, padding=True).to(device)
+
+    # Run through model
+    with torch.no_grad():
+        outputs = model(**inputs)
+
+    logits = outputs.logits
+    probabilities = torch.sigmoid(logits)  # Use sigmoid for multi-label classification
+
+    # Convert probabilities to binary predictions (Threshold = 0.5)
+    predictions = (probabilities > 0.5).float()
+
+    predicted_label_names = [labels[i] for i in range(len(predictions[0])) if predictions[0][i] == 1]
+
+    # Validate prediction
+    if "Invalid_instruction" in predicted_label_names:
+        return jsonify({"error": ["Invalid instruction"]})
+    
+    if len(predicted_label_names) <= 1:
+        return jsonify({"error":  ["Invalid tag"]})
+
+    instruction = None
+    tag = None
+
+    for label in predicted_label_names:
+        if "move_instruction" in label.lower() or "get_location" in label.lower():  # "Get location" or "Move location" pattern
+            instruction = label
+            break  # Once found, break from the loop
+    
+    if instruction:
+        tag = next((label for label in predicted_label_names if label != instruction), None)
+   
+
+    # geting route
+    print(house_map.nodes)
+
+    print("instruction",instruction)
+    print("tag",tag)
+    if tag == None:
+        return jsonify({"error": f"No Tags Defined"})
+
+    try:
+        current_x = data.get("current_x")
+        current_y = data.get("current_y")
+        target_tag = tag
+
+        with open("grid_data.json", "r") as f:
+            new_grid = json.load(f)
+
+        if current_x is None or current_y is None or target_tag is None:
+            return jsonify({"error": "Missing input parameters (current_x, current_y, target_tag)"})
+
+        # Find all grid locations matching the target tag
+        target_positions = [(x, y) for x in range(len(new_grid)) for y in range(len(new_grid[x])) if new_grid[x][y] == target_tag]
+
+        if not target_positions:
+            return jsonify({"error": f"No location found for tag: {target_tag}"})
+
+        # Find the closest target position using shortest path
+        shortest_path = None
+        for target in target_positions:
+            try:
+                path = nx.shortest_path(house_map, source=(current_x, current_y), target=target)
+                print(path)
+                if shortest_path is None or len(path) < len(shortest_path):
+                    shortest_path = path
+            except nx.NetworkXNoPath:
+                continue
+
+        if shortest_path is None:
+            return jsonify({"error": "No valid path found"})
+
+        return jsonify({"path": shortest_path})
+
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+    # return jsonify({"predicted_labels": predicted_label_names})
+
+@app.route("/load_grid", methods=["GET"])
+def load_grid():
+    try:
+        with open("grid_data.json", "r") as f:
+            grid = json.load(f)
+        return jsonify({"grid": grid})
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+@app.route("/save_grid", methods=["POST"])
+def save_grid():
+    try:
+        grid_data = request.get_json()
+        global grid, house_map
+        house_map.clear()
+        
+        max_x = max(int(key.split(',')[0]) for key in grid_data.keys()) + 1
+        max_y = max(int(key.split(',')[1]) for key in grid_data.keys()) + 1
+        new_grid = [["empty" for _ in range(max_y)] for _ in range(max_x)]
+
+        for key, value in grid_data.items():
+            x, y = map(int, key.split(','))
+            new_grid[x][y] = value  # Store actual value
+
+        grid = new_grid
+        
+        for x in range(len(grid)):
+            for y in range(len(grid[x])):
+                if grid[x][y] != "empty":  # Only connect non-wall tiles
+                    # Connect to right neighbor
+                    if y + 1 < len(grid[x]) and grid[x][y + 1] != "empty":
+                        house_map.add_edge((x, y), (x, y + 1))
+                        # print("connect right", x, y)
+                    
+                    # Connect to bottom neighbor
+                    if x + 1 < len(grid) and grid[x + 1][y] != "empty":
+                        house_map.add_edge((x, y), (x + 1, y))
+                        # print("connect bot", x, y)
+                    
+        with open("grid_data.json", "w") as f:
+            json.dump(new_grid, f)
+        return jsonify({"message": "Grid saved successfully!"})
+    except Exception as e:
+        return jsonify({"message": "Some error" + str(e)})
+#//////////////////////////////////////////////////////
+
 # Start the web server
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)

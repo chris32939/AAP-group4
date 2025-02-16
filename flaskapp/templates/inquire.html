@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>Path Inquires</title>
+    <!-- Font Awesome icons (free version)-->
+    <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
+    <!-- Google fonts-->
+    <link href="https://fonts.googleapis.com/css?family=Varela+Round" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet" />
+    <!-- My CSS -->
+    <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet" />
+    
+    
+    <style>
+        body{
+            background: #99d8ff;
+        }
+        #mainNav{
+            background: linear-gradient(#0083d5, #99d8ff00);
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(var(--grid-cols, 1), 10px);
+            gap: 2px;
+        }
+        .cell {
+            width: 10px;
+            height: 10px;
+            border: 1px solid black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        .chosen{
+            background: black;
+        }
+        .empty { background-color: lightgray; }
+        .attic { background-color: lightblue; color: blue; }
+        .bedroom { background-color: lightgreen; color: green; }
+        .kitchen { background-color: lightcoral; color: red; }
+        .balcony { background-color: purple; color: white; }
+        .bathroom { background-color: lightblue; color: navy; }
+        .conference_room { background-color: brown; color: white; }
+        .dining_room { background-color: orange; color: darkred; }
+        .garage { background-color: gray; color: white; }
+        .living_room { background-color: yellow; color: black; }
+        .office { background-color: darkblue; color: white; }
+        .storeroom { background-color: darkgray; color: white; }
+        .utility_room { background-color: teal; color: white; }
+        .pathway { background-color: white; color: black; border: 0.5px dashed black; }
+
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top" id="mainNav">
+        <div class="container px-4 px-lg-5">
+            <a class="navbar-brand">AAP - Group 4</a>
+            <button class="navbar-toggler navbar-toggler-right" type="button" data-bs-toggle="collapse" data-bs-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                Menu
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}">Return</a></li>
+                    <li class="nav-item"><a class="nav-link" href="mapcreation">MapManager</a></li>
+                    <li class="nav-item"><a class="nav-link" href="inquire">Inquires</a></li>
+                    <li class="nav-item d-flex align-items-center">
+                        <span class="nav-link nav-username">Hello, {{ username }}</span>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link">Change User Details</a>
+                    </li>
+                    <li class="nav-item"><a class="nav-link">Log Out</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div style="margin-top:  130px;">
+
+    </div>
+    <div style="margin:50px">
+        <h1><b>Path Inquiry</b><h6>(dex)</h6></h1>
+        <br><hr><br>
+
+        <h1>Text Prediction</h1><br>
+        <form id="predictForm">
+            <label for="text">Input Text:</label>
+            <textarea name="text" id="text" rows="4" cols="50" required></textarea><br><br>
+            <label for="current_x">Current X:</label>
+            <input type="number" id="current_x" required>
+            <label for="current_y">Current Y:</label>
+            <input type="number" id="current_y" required>
+            <button type="button" onclick="predict()">Submit</button>
+            <br><hr><br>
+        </form>
+
+        <div>Path Found : <div id="route_to_get"></div></div>
+        <br>
+
+        <h2>Miniature Map</h2>
+        <div class="grid" id="mini_grid"></div>
+        
+        <br>
+    </div>
+    <script>
+        
+        function predict() {
+            const text = document.getElementById("text").value;
+            const current_x = document.getElementById("current_x").value;
+            const current_y = document.getElementById("current_y").value;
+            if (!current_x || !current_y || isNaN(current_x) || isNaN(current_y)) {
+                alert("Please enter valid numbers for current location.");
+                return;
+            }
+            fetch("/predict", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text: text, current_x: parseInt(current_y), current_y: parseInt(current_x) })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert("Error: " + data.error);
+                } else {
+                    document.getElementById("route_to_get").textContent = "Path: " + JSON.stringify(data.path);
+                    fetch("/load_grid")
+                        .then(response => response.json())
+                        .then(data2 => {
+                            if (data2.grid) renderMiniGrid(data2.grid, data.path);
+                        })
+                        .catch(error => console.error("Error loading grid:", error));
+                    renderMiniGrid(data.grid, data.path);
+                }
+            })
+            .catch(error => console.error("Error:", error));
+        }
+
+        function renderMiniGrid(savedGrid, path) {
+            const miniGrid = document.getElementById("mini_grid");
+            miniGrid.innerHTML = "";
+            const rows = savedGrid.length;
+            const cols = savedGrid[0].length;
+            miniGrid.style.setProperty("--grid-cols", cols);
+            gridData = {};
+
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    const cell = document.createElement("div");
+                    const roomType = savedGrid[row][col] || "empty";
+                    cell.className = `cell ${roomType}`;
+                    cell.id = `cell_${row}_${col}`;
+                    if (path.some(([r, c]) => r === row && c === col)) {
+                        cell.className = `cell chosen`;
+                    }
+                    else{
+                        cell.className = `cell ${roomType}`;
+                    }
+                    miniGrid.appendChild(cell);
+                    gridData[`${row},${col}`] = roomType;
+                }
+            }
+        }
+    </script>
+</body>
+</html>
