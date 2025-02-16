@@ -125,6 +125,15 @@
             };
             reader.readAsDataURL(file);
         });
+
+        function confirmLogout() {
+            // Show a confirmation dialog
+            const confirmed = confirm("Are you sure you want to log out?");
+            if (confirmed) {
+                // If the user confirms, log out by redirecting to the logout route
+                window.location.href = "/logout";
+            }
+        }
     </script>
 </body>
 </html>
