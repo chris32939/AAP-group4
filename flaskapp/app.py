@@ -804,7 +804,7 @@ def predictGroceryItem():
     
 #/////////////////////////////////////////// my shit (Dex)
 # ======== MODEL SETUP ========
-'''
+
 model = BertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=15)
 model.load_state_dict(torch.load("models/model_weights.pth", map_location=torch.device('cpu')))
 model.eval()
@@ -824,7 +824,7 @@ grid = {}
 house_map = nx.Graph()  # Graph for pathfinding
 instruction = None
 tag = None
-'''
+
 # ======== ROUTES ========
 
 @app.route("/mapcreation")
