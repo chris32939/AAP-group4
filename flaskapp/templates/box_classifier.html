@@ -11,6 +11,30 @@
     <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet" />
     <!-- My CSS -->
     <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet" />
+    <style>
+        .input-group {
+            margin-bottom: 1rem;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #fff;
+            font-size: 1.1rem;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 0.5rem;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 1rem;
+            background-color: #fff;
+            color: #333;
+        }
+        .input-group input:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+    </style>
     <script>
         async function predictPosition() {
             let width = document.getElementById("width").value;
@@ -53,9 +77,9 @@
         }
     </script>
 </head>
-<body>
+<body id="page-top">
     <!-- Navigation-->
-    <nav class="navbar navbar-expand-lg navbar-light" id="mainNav">
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top" id="mainNav">
         <div class="container px-4 px-lg-5">
             <a class="navbar-brand" href="{{ url_for('index') }}">AAP - Group 4</a>
             <button class="navbar-toggler navbar-toggler-right" type="button" data-bs-toggle="collapse" data-bs-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
@@ -79,25 +103,94 @@
         </div>
     </nav>
     
-    <h2>Bounding Box Prediction</h2>
+    <!-- Masthead-->
+    <header class="masthead">
+        <div class="container px-4 px-lg-5 d-flex h-100 align-items-center justify-content-center">
+            <div class="d-flex justify-content-center">
+                <div class="text-center">
+                    <h1 class="mx-auto my-0 text-uppercase">Bounding Box Prediction</h1>
+                    <h2 class="text-white-50 mx-auto mt-2 mb-5">A bounding box position prediction model by Ren Jun.</h2>
+                </div>
+            </div>
+        </div>
+    </header>
     
-    <label>Image Width: <input type="number" id="width" value="500"></label><br>
-    <label>Image Height: <input type="number" id="height" value="500"></label><br>
-    <label>xmin: <input type="number" id="xmin" value="100"></label><br>
-    <label>ymin: <input type="number" id="ymin" value="100"></label><br>
-    <label>xmax: <input type="number" id="xmax" value="300"></label><br>
-    <label>ymax: <input type="number" id="ymax" value="300"></label><br>
-
-    <button onclick="predictPosition()">Predict Position</button>
-    <button onclick="drawBox()">Draw Bounding Box</button>
-
-    <h3>Prediction Result:</h3>
-    <p id="prediction">---</p>
-
-    <h3>Bounding Box Preview:</h3>
-    <img id="bounding-box-img" src="/static/bounding_box.png" width="500" height="500">
-
-
+    <!-- Input Section -->
+    <section class="upload-section text-center" id="input">
+        <div class="container px-4 px-lg-5 d-flex h-100 align-items-center justify-content-center">
+            <div class="col-lg-8">
+                <h2 class="text-white mb-4">Enter Bounding Box Coordinates</h2>
+                <div class="row gx-4 gx-lg-5 col-lg-8 mx-auto justify-content-center">
+                    <div class="col-lg-8">
+                        <div class="input-group">
+                            <label for="width">Image Width:</label>
+                            <input type="number" id="width" value="500">
+                        </div>
+                        <div class="input-group">
+                            <label for="height">Image Height:</label>
+                            <input type="number" id="height" value="500">
+                        </div>
+                        <div class="input-group">
+                            <label for="xmin">xmin:</label>
+                            <input type="number" id="xmin" value="100">
+                        </div>
+                        <div class="input-group">
+                            <label for="ymin">ymin:</label>
+                            <input type="number" id="ymin" value="100">
+                        </div>
+                        <div class="input-group">
+                            <label for="xmax">xmax:</label>
+                            <input type="number" id="xmax" value="300">
+                        </div>
+                        <div class="input-group">
+                            <label for="ymax">ymax:</label>
+                            <input type="number" id="ymax" value="300">
+                        </div>
+                        <div class="btn-group" id="buttonGroup" style="display: flex;">
+                            <button class="btn btn-primary" onclick="predictPosition()">Predict Position</button>
+                            <button class="btn btn-secondary" onclick="drawBox()">Draw Bounding Box</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Result Section -->
+    <section class="result-section bg-light" id="result">
+        <div class="container px-4 px-lg-5 d-flex h-100 align-items-center justify-content-center">
+            <div class="col-lg-8">
+                <div class="h-100 project">
+                    <div class="d-flex h-100">
+                        <div class="result-text w-100 my-auto text-center text-lg-left">
+                            <h2 class="text-white mt-5 mb-4">Prediction Result</h2>
+                            <p id="prediction">---</p>
+                            <h2 class="text-white mt-5 mb-4">Bounding Box Preview</h2>
+                            <img id="bounding-box-img" src="/flaskapp/static/bounding_box.png" width="250" height="250" style="max-height: 50%; display: initial;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Footer-->
+    <footer class="footer small text-center text-black-50">
+        <div class="container px-4 px-lg-5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-up" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M8 15a.5.5 0 0 0 .5-.5V2.707l3.146 3.147a.5.5 0 0 0 .708-.708l-4-4a.5.5 0 0 0-.708 0l-4 4a.5.5 0 1 0 .708.708L7.5 2.707V14.5a.5.5 0 0 0 .5.5"/>
+            </svg>
+            <a class="" href="#page-top">Back to Top</a>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-up" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M8 15a.5.5 0 0 0 .5-.5V2.707l3.146 3.147a.5.5 0 0 0 .708-.708l-4-4a.5.5 0 0 0-.708 0l-4 4a.5.5 0 1 0 .708.708L7.5 2.707V14.5a.5.5 0 0 0 .5.5"/>
+            </svg>
+        </div>
+    </footer>
+    
+    <!-- Bootstrap core JS-->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Spinner and Progress Bar JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.1.3/socket.io.js"></script>
     <!-- My Custom JS -->
     <script type="application/javascript" src="{{ url_for('static', filename='js/scripts.js') }}"></script>
 </body>

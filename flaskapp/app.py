@@ -572,7 +572,7 @@ def get_coordinates():
     # Get the bounding box coordinates from the session
     bounding_box_coordinates = session.get('boundingBoxCoordinates', None)
 
-    if bounding_box_coordinates:
+    if bounding_box_coordinates:    
         return jsonify({"boundingBoxCoordinates": bounding_box_coordinates}), 200
     else:
         return jsonify({"message": "No coordinates found in session"}), 404
@@ -619,11 +619,8 @@ def draw_bounding_box():
         # Create an image with a bounding box
         image = Image.new("RGB", (width, height), "white")
         draw = ImageDraw.Draw(image)
-        
-        ymin_corrected = height - ymax
-        ymax_corrected = height - ymin
 
-        draw.rectangle([xmin, ymin_corrected, xmax, ymax_corrected], outline="red", width=3)
+        draw.rectangle([xmin, ymin, xmax, ymax], outline="red", width=3)
 
         output_path = os.path.join(OUTPUT_FOLDER, "bounding_box.png")
         image.save(output_path)
