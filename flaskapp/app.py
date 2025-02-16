@@ -590,10 +590,19 @@ def get_coordinates():
 ##### End of Christopher's routes #####
 
 # RenJun #
+import os
+import numpy as np
+import tensorflow as tf
+import pyttsx3
+from flask import jsonify, request
+from flask_login import login_required
+import numpy as np
+
 @app.route('/predictBox', methods=['POST'])
 @login_required
 def predictBox():
     try:
+        # Load the box classifier model
         box_model = tf.keras.models.load_model('weights/box_position_classifier.h5')
         # Class labels for predictions
         class_mapping = {
@@ -608,19 +617,25 @@ def predictBox():
         # Invert y-coordinates if necessary (assuming frontend sends top-left origin)
         ymin = float(height) - float(ymin)
         ymax = float(height) - float(ymax)
-
         # Ensure y1 >= y0
         if ymax < ymin:
             ymin, ymax = ymax, ymin
 
         input_data = np.array([[width, height, xmin, ymin, xmax, ymax]], dtype=np.float32)
         prediction = box_model.predict(input_data)
-        
         predicted_label = np.argmax(prediction, axis=1)[0]
         readable_label = class_mapping[predicted_label]
 
-        return jsonify({"prediction": readable_label})
+        # Generate speech for the prediction using pyttsx3
+        engine = pyttsx3.init()
+        speech_text = f"The predicted position is {readable_label}."
+        audio_filename = "prediction_audio.wav"
+        audio_path = os.path.join("static", audio_filename)
+        engine.save_to_file(speech_text, audio_path)
+        engine.runAndWait()
 
+        return jsonify({"prediction": readable_label, "audio_url": f"/static/{audio_filename}"})
+    
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
@@ -678,6 +693,9 @@ def predictAllDetections():
         # List to store the results
         results = []
 
+        # Build a speech summary string
+        speech_text = "The following results were detected: "
+
         # Iterate through each detection and predict its position
         for detection in detections:
             # Extract bounding box coordinates and class
@@ -706,8 +724,18 @@ def predictAllDetections():
                 "position": readable_label
             })
 
-        # Return the results
-        return jsonify({"results": results}), 200
+            # Add to the speech text
+            speech_text += f"{item_class} detected at {readable_label}. "
+
+        # Initialize pyttsx3 engine and generate audio
+        engine = pyttsx3.init()
+        audio_filename = "detections_audio.wav"
+        audio_path = os.path.join("static", audio_filename)
+        engine.save_to_file(speech_text, audio_path)
+        engine.runAndWait()
+
+        # Return the results and the URL to the audio file
+        return jsonify({"results": results, "audio_url": f"/static/{audio_filename}"}), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 400
@@ -776,6 +804,7 @@ def predictGroceryItem():
     
 #/////////////////////////////////////////// my shit (Dex)
 # ======== MODEL SETUP ========
+'''
 model = BertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=15)
 model.load_state_dict(torch.load("models/model_weights.pth", map_location=torch.device('cpu')))
 model.eval()
@@ -795,7 +824,7 @@ grid = {}
 house_map = nx.Graph()  # Graph for pathfinding
 instruction = None
 tag = None
-
+'''
 # ======== ROUTES ========
 
 @app.route("/mapcreation")
