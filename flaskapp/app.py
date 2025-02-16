@@ -559,10 +559,10 @@ def deleteObjectDetectionHistory():
 @app.route('/saveBoxCoordinates', methods=['POST'])
 @login_required
 def save_coordinates():
-    bounding_box_coordinates = request.json.get('boundingBoxCoordinates')
+    detections = request.json.get('detections')
 
     # Store the coordinates in the session
-    session['boundingBoxCoordinates'] = bounding_box_coordinates
+    session['detections'] = detections
 
     return jsonify({"message": "Coordinates saved to session"}), 200
 
@@ -570,10 +570,10 @@ def save_coordinates():
 @login_required
 def get_coordinates():
     # Get the bounding box coordinates from the session
-    bounding_box_coordinates = session.get('boundingBoxCoordinates', None)
+    detections = session.get('detections', None)
 
-    if bounding_box_coordinates:    
-        return jsonify({"boundingBoxCoordinates": bounding_box_coordinates}), 200
+    if detections:    
+        return jsonify({"detections": detections}), 200
     else:
         return jsonify({"message": "No coordinates found in session"}), 404
 
@@ -644,6 +644,63 @@ def box_class():
     
     return render_template('box_classifier.html', username=current_user.username)
 
+@app.route('/predictAllDetections', methods=['POST'])
+@login_required
+def predictAllDetections():
+    try:
+        # Load the box position classifier model
+        box_model = tf.keras.models.load_model('weights/box_position_classifier.h5')
+
+        # Class labels for predictions
+        class_mapping = {
+            0: "Top-left", 1: "Top-middle", 2: "Top-right",
+            3: "Middle-left", 4: "Middle-middle", 5: "Middle-right",
+            6: "Bottom-left", 7: "Bottom-middle", 8: "Bottom-right"
+        }
+
+        # Get the list of detections from the request
+        data = request.json
+        detections = data.get("detections")
+
+        if not detections:
+            return jsonify({"error": "No detections provided"}), 400
+
+        # List to store the results
+        results = []
+
+        # Iterate through each detection and predict its position
+        for detection in detections:
+            # Extract bounding box coordinates and class
+            xmin, ymin, xmax, ymax = detection["bounding_box"]
+            item_class = detection["class"]
+
+            # Invert y-coordinates if necessary (assuming frontend sends top-left origin)
+            ymin = float(640) - float(ymin)
+            ymax = float(640) - float(ymax)
+
+            # Ensure y1 >= y0
+            if ymax < ymin:
+                ymin, ymax = ymax, ymin
+
+            # Prepare input data for the model
+            input_data = np.array([[640, 640, xmin, ymin, xmax, ymax]], dtype=np.float32)
+
+            # Predict the position
+            prediction = box_model.predict(input_data)
+            predicted_label = np.argmax(prediction, axis=1)[0]
+            readable_label = class_mapping[predicted_label]
+
+            # Append the result to the list
+            results.append({
+                "item": item_class,
+                "position": readable_label
+            })
+
+        # Return the results
+        return jsonify({"results": results}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
 
 # Start the web server
 if __name__ == "__main__":
