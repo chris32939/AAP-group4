@@ -79,6 +79,9 @@
                         <p id="prediction">---</p>
                         <h2 class="text-dark mt-5 mb-4">Uploaded Image</h2>
                         <img id="uploaded-img" src="" width="250" style="max-height: 50%; display: none;">
+                        <h2 class="text-dark mt-5 mb-4">Audio Playback</h2>
+                        <!-- Audio element for playing synthesized speech -->
+                        <audio id="audio" controls style="display: none;"></audio>
                     </div>
                 </div>
             </div>
@@ -94,7 +97,7 @@
 
     <!-- Bootstrap core JS-->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Custom JS for handling the file upload and prediction -->
+    <!-- Custom JS for handling the file upload, prediction, and audio playback -->
     <script>
         document.getElementById('uploadForm').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -107,7 +110,7 @@
             const reader = new FileReader();
             reader.onload = async function() {
                 // The full data URL is available in reader.result
-                // Extract the base64 part if needed for the server
+                // Extract the base64 part for the server
                 const base64Data = reader.result.split(',')[1];
                 const response = await fetch("/predictGroceryItem", {
                     method: "POST",
@@ -122,6 +125,12 @@
                     // Display the uploaded image using the local data URL (reader.result)
                     document.getElementById('uploaded-img').src = reader.result;
                     document.getElementById('uploaded-img').style.display = "block";
+                    // Set up the audio element with the synthesized speech
+                    const audioElement = document.getElementById('audio');
+                    audioElement.src = result.audio_url;
+                    audioElement.style.display = "block";
+                    // Optionally, auto-play the audio:
+                    audioElement.play();
                 }
             };
             reader.readAsDataURL(file);
