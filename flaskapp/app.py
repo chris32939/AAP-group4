@@ -579,23 +579,18 @@ def get_coordinates():
 
 ##### End of Christopher's routes #####
 
-
-box_model = tf.keras.models.load_model('weights/box_position_classifier.h5')
-
-# Class labels for predictions
-class_mapping = {
-    0: "Top-left", 1: "Top-middle", 2: "Top-right",
-    3: "Middle-left", 4: "Middle-middle", 5: "Middle-right",
-    6: "Bottom-left", 7: "Bottom-middle", 8: "Bottom-right"
-}
-
-OUTPUT_FOLDER = "static"
-os.makedirs(OUTPUT_FOLDER, exist_ok=True)
-
+# RenJun #
 @app.route('/predictBox', methods=['POST'])
 @login_required
 def predictBox():
     try:
+        box_model = tf.keras.models.load_model('weights/box_position_classifier.h5')
+        # Class labels for predictions
+        class_mapping = {
+            0: "Top-left", 1: "Top-middle", 2: "Top-right",
+            3: "Middle-left", 4: "Middle-middle", 5: "Middle-right",
+            6: "Bottom-left", 7: "Bottom-middle", 8: "Bottom-right"
+        }
         data = request.json
         width, height = data["width"], data["height"]
         xmin, ymin, xmax, ymax = data["xmin"], data["ymin"], data["xmax"], data["ymax"]
@@ -615,6 +610,8 @@ def predictBox():
 @login_required
 def draw_bounding_box():
     try:
+        OUTPUT_FOLDER = "static"
+        os.makedirs(OUTPUT_FOLDER, exist_ok=True)
         data = request.json
         width, height = int(data["width"]), int(data["height"])
         xmin, ymin, xmax, ymax = int(data["xmin"]), int(data["ymin"]), int(data["xmax"]), int(data["ymax"])
