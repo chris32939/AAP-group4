@@ -35,51 +35,10 @@
             outline: none;
         }
     </style>
-    <script>
-        async function predictPosition() {
-            let width = document.getElementById("width").value;
-            let height = document.getElementById("height").value;
-            let xmin = document.getElementById("xmin").value;
-            let ymin = document.getElementById("ymin").value;
-            let xmax = document.getElementById("xmax").value;
-            let ymax = document.getElementById("ymax").value;
-
-            let response = await fetch('/predictBox', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ width, height, xmin, ymin, xmax, ymax })
-            });
-
-            let result = await response.json();
-            document.getElementById("prediction").innerText = result.prediction || "Error: " + result.error;
-        }
-
-        async function drawBox() {
-            let width = document.getElementById("width").value;
-            let height = document.getElementById("height").value;
-            let xmin = document.getElementById("xmin").value;
-            let ymin = document.getElementById("ymin").value;
-            let xmax = document.getElementById("xmax").value;
-            let ymax = document.getElementById("ymax").value;
-
-            let response = await fetch('/draw-box', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ width, height, xmin, ymin, xmax, ymax })
-            });
-
-            let result = await response.json();
-            if (result.image_url) {
-                document.getElementById("bounding-box-img").src = result.image_url;
-            } else {
-                alert("Error: " + result.error);
-            }
-        }
-    </script>
 </head>
 <body id="page-top">
     <!-- Navigation-->
-    <nav class="navbar navbar-expand-lg navbar-light fixed-top" id="mainNav">
+    <nav class="navbar navbar-expand-lg navbar-light" id="mainNav">
         <div class="container px-4 px-lg-5">
             <a class="navbar-brand" href="{{ url_for('index') }}">AAP - Group 4</a>
             <button class="navbar-toggler navbar-toggler-right" type="button" data-bs-toggle="collapse" data-bs-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">

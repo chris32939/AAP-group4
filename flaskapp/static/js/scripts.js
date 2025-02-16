@@ -79,8 +79,8 @@ function submitFile() {
     .then(response => response.json())
     .then(data => {
         // Store the bounding box coordinates in sessionStorage before redirecting
-        const boundingBoxCoordinates = data.detections[0]['bounding_box'];
-        sessionStorage.setItem("boundingBoxCoordinates", JSON.stringify(boundingBoxCoordinates));
+        const detections = data.detections; // Assuming `detections` is an array of objects
+        sessionStorage.setItem("detections", JSON.stringify(detections));
 
         if (data.file_type==="image") {
             // Show the image
@@ -127,7 +127,7 @@ function submitFile() {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                boundingBoxCoordinates: boundingBoxCoordinates,
+                detections: detections,
             }),
         })
         .then(response => response.json())
@@ -357,21 +357,12 @@ function getBoxCoordinatesFromServer() {
     })
     .then(response => response.json())
     .then(data => {
-        if (data.boundingBoxCoordinates) {
-            const boundingBoxCoordinates = data.boundingBoxCoordinates;
-            console.log("Coordinates retrieved:", boundingBoxCoordinates);
-
-            // Once the coordinates are retrieved, populate the form
-            document.getElementById("width").value = 640;
-            document.getElementById("height").value = 640;
-            document.getElementById("xmin").value = boundingBoxCoordinates[0];
-            document.getElementById("ymin").value = boundingBoxCoordinates[1];
-            document.getElementById("xmax").value = boundingBoxCoordinates[2];
-            document.getElementById("ymax").value = boundingBoxCoordinates[3];
-
+        if (data.detections) {
+            const detections = data.detections;
+            console.log("Coordinates retrieved:", detections);
+            
             // Call 'box_class' functions after the coordinates are set
-            predictPosition();
-            drawBox();
+            predictAllDetections();
         } else {
             console.log("No coordinates found in session");
         }
@@ -421,6 +412,52 @@ async function drawBox() {
     }
 }
 
+async function predictAllDetections() {
+    // Get the list of detections from sessionStorage or another source
+    const detections = JSON.parse(sessionStorage.getItem("detections"));
+
+    if (!detections || detections.length === 0) {
+        alert("No detections found. Please run object detection first.");
+        return;
+    }
+
+    try {
+        // Send the detections to the backend for prediction
+        const response = await fetch('/predictAllDetections', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                detections: detections,
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // Display the results in the prediction element
+        const predictionElement = document.getElementById("prediction");
+
+        if (data.results && data.results.length > 0) {
+            // Format the results as a string
+            const resultsString = data.results
+                .map(result => `${result.item}: ${result.position}`)
+                .join("\n");
+
+            // Update the prediction element
+            predictionElement.innerText = resultsString;
+        } else {
+            predictionElement.innerText = "No predictions available.";
+        }
+    } catch (error) {
+        console.error('Error predicting positions:', error);
+        document.getElementById("prediction").innerText = "Error predicting positions. Please try again.";
+    }
+}
 
 // Fetch detection history when the page loads
 window.onload = function() {
