@@ -1,4 +1,5 @@
 import os
+import uuid
 from flask import Flask, jsonify, request, render_template, redirect, url_for, session, send_file
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -12,6 +13,9 @@ from flask_socketio import SocketIO
 from flask_cors import CORS
 import tensorflow as tf
 from PIL import Image, ImageDraw
+import pandas as pd
+import base64
+import io
 # Ensure ffmpeg is installed 'conda install -c conda-forge ffmpeg'. ffmpeg is used in a subprocess.
 
 import cv2
@@ -702,6 +706,54 @@ def predictAllDetections():
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
+#Charlotte#
+grocery_model = tf.keras.models.load_model('weights/grocery_model.h5')
+excel_file = 'static/GroceryList.xlsx'
+df = pd.read_excel(excel_file)
+grocery_class_names = df['Items'].tolist()
+
+def preprocess_image(image):
+    image = image.convert("RGB")
+    image = image.resize((128, 128))
+    image_array = np.array(image)
+    # Do not save the image; simply expand dims for prediction.
+    image_array = np.expand_dims(image_array, axis=0)
+    return image_array
+
+@app.route("/groceryClassifier")
+@login_required
+def grocery_classifier():
+    return render_template("grocery_classifier.html", username=current_user.username)
+
+@app.route('/predictGroceryItem', methods=['POST'])
+@login_required
+def predictGroceryItem():
+    try:
+        data = request.json
+        image_data = data.get("image_data")
+        if not image_data:
+            return jsonify({"error": "No image data provided"}), 400
+
+        # Decode the base64 image data
+        image_bytes = base64.b64decode(image_data)
+        image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+
+        preprocessed_image = preprocess_image(image)
+        predictions = grocery_model.predict(preprocessed_image)
+        percentages = predictions[0] * 100
+        predicted_class_idx = np.argmax(predictions, axis=-1)[0]
+        predicted_class_name = grocery_class_names[predicted_class_idx]
+
+        print("Prediction percentages:")
+        for cls, perc in zip(grocery_class_names, percentages):
+            print(f"{cls}: {perc:.2f}%")
+
+        return jsonify({
+            "prediction": predicted_class_name
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+    
 # Start the web server
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grocery Item Prediction</title>
+    <!-- Font Awesome icons -->
+    <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
+    <!-- Google fonts-->
+    <link href="https://fonts.googleapis.com/css?family=Varela+Round" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,300,400,600,700,800,900" rel="stylesheet" />
+    <!-- My CSS -->
+    <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet" />
+    <style>
+        .footer { background: rgba(225, 225, 225, 1); }
+        .input-group { margin-bottom: 1rem; }
+        .input-group label { display: block; margin-bottom: 0.5rem; color: #fff; font-size: 1.1rem; }
+        .input-group input { width: 100%; padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; font-size: 1rem; background-color: #fff; color: #333; }
+        .input-group input:focus { border-color: #007bff; outline: none; }
+    </style>
+</head>
+<body id="page-top">
+    <!-- Navigation-->
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top" id="mainNav">
+        <div class="container px-4 px-lg-5">
+            <a class="navbar-brand" href="{{ url_for('index') }}">AAP - Group 4</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarResponsive">
+                Menu <i class="fas fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('objectDetection') }}">Object Detection</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('box_class') }}">Box Classifier</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('grocery_classifier') }}">Grocery Classifier</a></li>
+                    <li class="nav-item d-flex align-items-center">
+                        <span class="nav-link nav-username">Hello, {{ username }}</span>
+                    </li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('change_user_details') }}">Change User Details</a></li>
+                    <li class="nav-item"><a class="nav-link" onclick="confirmLogout()">Log Out</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Masthead-->
+    <header class="masthead">
+        <div class="container d-flex h-100 align-items-center justify-content-center">
+            <div class="text-center">
+                <h1 class="mx-auto my-0 text-uppercase">Grocery Item Prediction</h1>
+                <h2 class="text-white-50 mx-auto mt-2 mb-5">A grocery item classification model</h2>
+            </div>
+        </div>
+    </header>
+
+    <!-- Input Section -->
+    <section class="upload-section text-center" id="input">
+        <div class="container d-flex h-100 align-items-center justify-content-center">
+            <div class="col-lg-8">
+                <h2 class="text-white mb-4">Upload an Image</h2>
+                <form id="uploadForm">
+                    <div class="input-group">
+                        <label for="fileInput">Select an image:</label>
+                        <input type="file" id="fileInput" accept="image/*">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Predict Item</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Result Section -->
+    <section class="result-section bg-light" id="result">
+        <div class="container d-flex h-100 align-items-center justify-content-center">
+            <div class="col-lg-8">
+                <div class="project">
+                    <div class="result-text text-center">
+                        <h2 class="text-dark mt-5 mb-4">Prediction Result</h2>
+                        <p id="prediction">---</p>
+                        <h2 class="text-dark mt-5 mb-4">Uploaded Image</h2>
+                        <img id="uploaded-img" src="" width="250" style="max-height: 50%; display: none;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer-->
+    <footer class="footer small text-center text-black-50">
+        <div class="container">
+            <a href="#page-top">Back to Top</a>
+        </div>
+    </footer>
+
+    <!-- Bootstrap core JS-->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS for handling the file upload and prediction -->
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const fileInput = document.getElementById('fileInput');
+            if (fileInput.files.length === 0) {
+                alert("Please select an image file.");
+                return;
+            }
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = async function() {
+                // The full data URL is available in reader.result
+                // Extract the base64 part if needed for the server
+                const base64Data = reader.result.split(',')[1];
+                const response = await fetch("/predictGroceryItem", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({ image_data: base64Data })
+                });
+                const result = await response.json();
+                if (result.error) {
+                    alert(result.error);
+                } else {
+                    document.getElementById('prediction').innerText = "Prediction: " + result.prediction;
+                    // Display the uploaded image using the local data URL (reader.result)
+                    document.getElementById('uploaded-img').src = reader.result;
+                    document.getElementById('uploaded-img').style.display = "block";
+                }
+            };
+            reader.readAsDataURL(file);
+        });
+    </script>
+</body>
+</html>
+
