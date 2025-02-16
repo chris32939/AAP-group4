@@ -595,6 +595,14 @@ def predictBox():
         width, height = data["width"], data["height"]
         xmin, ymin, xmax, ymax = data["xmin"], data["ymin"], data["xmax"], data["ymax"]
 
+        # Invert y-coordinates if necessary (assuming frontend sends top-left origin)
+        ymin = float(height) - float(ymin)
+        ymax = float(height) - float(ymax)
+
+        # Ensure y1 >= y0
+        if ymax < ymin:
+            ymin, ymax = ymax, ymin
+
         input_data = np.array([[width, height, xmin, ymin, xmax, ymax]], dtype=np.float32)
         prediction = box_model.predict(input_data)
         
