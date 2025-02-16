@@ -16,6 +16,7 @@ from PIL import Image, ImageDraw
 import pandas as pd
 import base64
 import io
+import pyttsx3 
 # Ensure ffmpeg is installed 'conda install -c conda-forge ffmpeg'. ffmpeg is used in a subprocess.
 
 import cv2
@@ -707,6 +708,13 @@ def predictAllDetections():
         return jsonify({"error": str(e)}), 400
 
 #Charlotte#
+engine = pyttsx3.init()
+
+# Ensure the audio folder exists
+audio_folder = os.path.join("static", "audio")
+if not os.path.exists(audio_folder):
+    os.makedirs(audio_folder)
+
 grocery_model = tf.keras.models.load_model('weights/grocery_model.h5')
 excel_file = 'static/GroceryList.xlsx'
 df = pd.read_excel(excel_file)
@@ -748,8 +756,15 @@ def predictGroceryItem():
         for cls, perc in zip(grocery_class_names, percentages):
             print(f"{cls}: {perc:.2f}%")
 
+        speech_filename = f"{uuid.uuid4().hex}.wav"
+        speech_output_path = os.path.join(audio_folder, speech_filename)
+        engine.save_to_file(predicted_class_name, speech_output_path)
+        engine.runAndWait()
+        print(f"Audio synthesized and saved at: {speech_output_path}")
+
         return jsonify({
-            "prediction": predicted_class_name
+            "prediction": predicted_class_name,
+            "audio_url": f"/static/audio/{speech_filename}"
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 400
