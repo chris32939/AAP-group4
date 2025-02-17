@@ -10,3 +10,5 @@ flask-socketio==5.5.1
 flask-cors==5.0.0
 tensorflow==2.18.0
 openpyxl==3.1.5
+pyttsx3==2.98
+transformers==4.48.3
